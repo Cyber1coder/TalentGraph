@@ -1,0 +1,8 @@
+{
+  "name": "talentgraph",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["server", "client"],
+  "scripts": {"dev": "concurrently -k \"npm run dev -w server\" \"npm run dev -w client\"", "build": "npm run build -w server && npm run build -w client", "seed": "npm run seed -w server", "diagnostics": "npm run diagnostics -w server", "test": "npm test -w server && npm test -w client", "test:integration": "npm run test:integration -w server", "lint": "npm run lint -w server && npm run lint -w client"},
+  "devDependencies": {"concurrently": "^9.1.2"}
+}

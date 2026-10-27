@@ -1,0 +1,5 @@
+const aliases:Record<string,string>={nodejs:'node.js','node js':'node.js',reactjs:'react','amazon web services':'aws',js:'javascript'};
+export function normalizeSkillInput(value:string):string{const key=value.trim().replace(/\s+/g,' ').toLowerCase();return aliases[key]??key;}
+export function localDateTimeToIso(value?:string):string|undefined{if(!value)return undefined;const date=new Date(value),timestamp=date.getTime();if(!Number.isFinite(timestamp))return undefined;const pad=(n:number)=>String(n).padStart(2,'0');const roundTrip=`${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;return roundTrip===value.slice(0,16)?date.toISOString():undefined;}
+export function isFutureLocalDateTime(value:string|undefined,now:number=Date.now()):boolean{const iso=localDateTimeToIso(value);return !!iso&&Date.parse(iso)>now;}
+export function localInputFromIso(value?:string):string{if(!value)return '';const date=new Date(value);if(!Number.isFinite(date.getTime()))return '';return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);}

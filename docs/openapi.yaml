@@ -1,0 +1,125 @@
+openapi: 3.0.3
+info:
+  title: TalentGraph API
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000/api/v1
+security:
+  - sessionCookie: []
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: tg_session
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: {type: string}
+paths:
+  /health:
+    get:
+      security: []
+      summary: Health and MongoDB connection status
+      responses:
+        '200': {description: Health status}
+  /auth/register:
+    post:
+      security: []
+      summary: Register candidate or recruiter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name: {type: string, minLength: 2}
+                email: {type: string, format: email}
+                password: {type: string, minLength: 10}
+                role: {type: string, enum: [candidate, recruiter]}
+      responses:
+        '201': {description: Account created}
+        '400': {description: Validation error}
+        '409': {description: Email already registered}
+  /auth/login:
+    post:
+      security: []
+      summary: Start an authenticated session
+      responses:
+        '200': {description: Session cookie set}
+        '401': {description: Invalid credentials}
+  /auth/logout:
+    post:
+      security: []
+      summary: Clear session cookie
+      responses:
+        '200': {description: Logged out}
+  /jobs:
+    get:
+      security: []
+      summary: Search published jobs
+      parameters:
+        - {in: query, name: q, schema: {type: string, maxLength: 100}}
+        - {in: query, name: workMode, schema: {type: string, enum: [remote, hybrid, onsite]}}
+        - {in: query, name: page, schema: {type: integer, minimum: 1, default: 1}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 50, default: 20}}
+      responses:
+        '200': {description: Paginated jobs}
+  /jobs/{id}/applications:
+    post:
+      summary: Apply to a published job as a candidate
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      responses:
+        '201': {description: Application created}
+        '409': {description: Duplicate application}
+  /recruiter/jobs:
+    get:
+      summary: Paginated authenticated recruiter's jobs and MongoDB status/application counts
+      parameters:
+        - {in: query, name: status, schema: {type: string, enum: [published, draft, closed, archived]}}
+        - {in: query, name: q, schema: {type: string, maxLength: 100}}
+        - {in: query, name: page, schema: {type: integer, minimum: 1, default: 1}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 50, default: 20}}
+      responses:
+        '200': {description: Owned jobs, summary counts, and pagination}
+        '403': {description: Recruiter role required}
+    post:
+      summary: Create a recruiter owned job as draft or published
+      description: Publishing requires a future deadline. The server binds recruiterId from the session and resolves the company under recruiter ownership.
+      responses:
+        '201': {description: Job created}
+        '400': {description: Invalid job fields or deadline}
+  /recruiter/jobs/{id}:
+    put:
+      summary: Edit an owned job posting
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Updated owned job}
+        '404': {description: Job not found for this recruiter}
+  /recruiter/jobs/{id}/status:
+    patch:
+      summary: Publish, close, reopen, or archive an owned job using legal status transitions
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Job status changed}
+        '409': {description: Invalid status transition}
+  /applications/{id}/status:
+    patch:
+      summary: Move an authorized application through a legal pipeline transition
+      parameters:
+        - {in: path, name: id, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Status and history updated}
+        '403': {description: Ownership failure}
+        '409': {description: Illegal transition}
+  /analytics/recruiter:
+    get:
+      summary: Aggregated analytics for owned jobs
+      responses:
+        '200': {description: MongoDB aggregation results}
